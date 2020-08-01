@@ -57,20 +57,22 @@ def new_uuid() -> str:
     return uuid
 
 
-def main(taskdir):
+def main(taskdir) -> int:
     pattern = r'^\w+[\w-]+\w$'
     uidregex = re.compile(pattern)
 
     try:
         os.stat(taskdir)
     except FileNotFoundError as err:
-        if self.verbose:
+        if verbose:
             print('Directory not found, exiting.')
-        if self.verbose > 2:
+        if verbose > 1:
             print(err)
-        sys.exit(1)
+        return 1
 
     for filename in getfiles(taskdir):
+        if verbose:
+            print(filename)
         modified = False
         filedata = readfile(filename)
         newdata = list()
@@ -94,7 +96,8 @@ def main(taskdir):
                 newdata.append("X"+line)
                 newdata.append('UID:'+new_uuid())
                 modified = True
-            elif line.startswith('X-RADICALE-NAME:'):
+                continue
+            if line.startswith('X-RADICALE-NAME:'):
                 # vdirsync chokes if 'X-RADICALE-NAME' is non-alphnumeric
                 # RADICALE seems to sometimes have URLs or Timezone information
                 # stored in it - here we just prepend another 'X', so the tag
@@ -116,19 +119,22 @@ def main(taskdir):
                 elif line.startswith('TZID:Europe/London'):
                     modify = True
             if modify:
+                # reset tag
+                modify = False
                 # rename tag
                 if verbose:
                     print(line)
                 newdata.append("X"+line)
                 modified = True
-            else:
-                newdata.append(line)
+                continue
+            newdata.append(line)
         newdata.append('')
         if modified:
             if writefile(filename+'.new', "\n".join(newdata)):
-                if verbose:
-                    print("mv {}.new {}".format(filename, filename))
+                if verbose > -1:
+                    print("{} modified".format(filename))
                 os.rename(filename+'.new', filename)
+    return 0
 
 
 if __name__ == '__main__':
@@ -137,9 +143,15 @@ if __name__ == '__main__':
     taskdir = '.'
 
     if sys.argv[1] == '-v':
-        verbose++
+        verbose = 1
+        taskdir = sys.argv[2]
+    elif sys.argv[1] == '-vv':
+        verbose = 2
         taskdir = sys.argv[2]
     else:
         taskdir = sys.argv[1]
-    main(taskdir)
+    if verbose:
+        print("You are running `{}`".format(" ".join(sys.argv)))
+    rc = main(taskdir)
+    sys.exit(rc)
 
