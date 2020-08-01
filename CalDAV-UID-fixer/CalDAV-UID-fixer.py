@@ -56,14 +56,11 @@ def new_uuid() -> str:
         print("New UUID: ", uuid)
     return uuid
 
-if __name__ == '__main__':
 
+def main(taskdir):
     pattern = r'^\w+[\w-]+\w$'
     uidregex = re.compile(pattern)
-    # taskdir = os.path.abspath(os.getcwd())
-    # taskdir = os.getcwd()
-    taskdir = '.'
-    taskdir = sys.argv[1]
+
     try:
         os.stat(taskdir)
     except FileNotFoundError as err:
@@ -79,6 +76,7 @@ if __name__ == '__main__':
         newdata = list()
         for line in filedata.splitlines():
             modify = False
+            # Make UID a UUID if non-alphnumeric
             if line.startswith('UID:'):
                 if line.rfind(':') > 3:
                     modify = True
@@ -88,10 +86,40 @@ if __name__ == '__main__':
                     if m == None:
                         modify = True
             if modify:
+                # reset flag
+                modify = False
+                # replace and add extra line
                 if verbose:
                     print(line)
                 newdata.append("X"+line)
                 newdata.append('UID:'+new_uuid())
+                modified = True
+            elif line.startswith('X-RADICALE-NAME:'):
+                # vdirsync chokes if 'X-RADICALE-NAME' is non-alphnumeric
+                # RADICALE seems to sometimes have URLs or Timezone information
+                # stored in it - here we just prepend another 'X', so the tag
+                # is no longer treated as an identifier
+                if line.rfind(':') > 15:
+                    modify = True
+                elif line.rfind('/') > -1:
+                    modify = True
+                else:
+                    (tag,uid) = line.split(':')
+                    m = uidregex.match(uid)
+                    if m == None:
+                        modify = True
+            elif line.startswith('TZID:'):
+                # vdirsync chokes if 'TZID' appears out of 'VTIMEZONE' context
+                # luckily this seems only to happen with my local timezone
+                if line.rfind(':') > 4:
+                    modify = True
+                elif line.startswith('TZID:Europe/London'):
+                    modify = True
+            if modify:
+                # rename tag
+                if verbose:
+                    print(line)
+                newdata.append("X"+line)
                 modified = True
             else:
                 newdata.append(line)
@@ -101,4 +129,17 @@ if __name__ == '__main__':
                 if verbose:
                     print("mv {}.new {}".format(filename, filename))
                 os.rename(filename+'.new', filename)
+
+
+if __name__ == '__main__':
+    # taskdir = os.path.abspath(os.getcwd())
+    # taskdir = os.getcwd()
+    taskdir = '.'
+
+    if sys.argv[1] == '-v':
+        verbose++
+        taskdir = sys.argv[2]
+    else:
+        taskdir = sys.argv[1]
+    main(taskdir)
 
