@@ -10,6 +10,7 @@ import re
 from uuid import uuid4
 
 verbose = 0
+mytag = 'FIXER'
 
 # --------- main -------------------------------------------------------------
 
@@ -93,14 +94,14 @@ def main(taskdir) -> int:
                 # replace and add extra line
                 if verbose:
                     print(line)
-                newdata.append("X"+line)
+                newdata.append("X-"+mytag+"-"+line)
                 newdata.append('UID:'+new_uuid())
                 modified = True
                 continue
             if line.startswith('X-RADICALE-NAME:'):
                 # vdirsync chokes if 'X-RADICALE-NAME' is non-alphnumeric
                 # RADICALE seems to sometimes have URLs or Timezone information
-                # stored in it - here we just prepend another 'X', so the tag
+                # stored in it - here we just prepend another 'X' tag, so the tag
                 # is no longer treated as an identifier
                 if line.rfind(':') > 15:
                     modify = True
@@ -124,7 +125,7 @@ def main(taskdir) -> int:
                 # rename tag
                 if verbose:
                     print(line)
-                newdata.append("X"+line)
+                newdata.append("X-"+mytag+"-"+line)
                 modified = True
                 continue
             newdata.append(line)
