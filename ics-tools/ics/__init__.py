@@ -2,8 +2,10 @@
 
 """Import submodules into one namespace."""
 from .ics_parse import parse_ics
+from .ics_write import write_ics
 
 if True is False:
-    str = ''
-    data = parse_ics(str)
+    string = ''
+    data = parse_ics(string)
+    string = write_ics(data)
 

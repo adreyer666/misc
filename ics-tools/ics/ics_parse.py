@@ -8,6 +8,9 @@ Small library to parse ics data sources
 
 
 def parse_ics(icsdata: str, source='', verbose=False) -> dict:
+    ctxnames_1 = { 'VEVENT': 1, 'VTODO': 1, 'VTIMEZONE': 1, 'ALARM': 1 }
+    ctxnames_2 = { 'VALARM': 1, 'STANDARD': 1, 'DAYLIGHT': 1 }
+    multivalue = [ 'ATTACH', 'ATTENDEE' ]
     lineno = 0
     data = dict()
     ctxstack = list()
@@ -28,10 +31,10 @@ def parse_ics(icsdata: str, source='', verbose=False) -> dict:
                 caldata = dict()
                 ctx_1 = None
                 ctx_2 = None
-            elif (ctx == 'VEVENT') or (ctx == 'VTODO') or (ctx == 'VTIMEZONE') or (ctx == 'ALARM'):
+            elif ctx in ctxnames_1:
                 ctx_1 = dict()
                 ctx_2 = None
-            elif (ctx == 'VALARM') or (ctx == 'STANDARD') or (ctx == 'DAYLIGHT'):
+            elif ctx in ctxnames_2:
                 ctx_2 = dict()
             else:
                 print("unknown context; source {} line {}".format(source,lineno))
@@ -73,6 +76,8 @@ def parse_ics(icsdata: str, source='', verbose=False) -> dict:
                 print(line)
                 continue
         elif (line.startswith(' ')) or (line.startswith('\\')):
+            if line.startswith('\\'):
+                line = ' '+line     ## fix brokenness
             if not key:
                 print("broken continuation; source {} line {}".format(source,lineno))
                 print(line)
@@ -106,12 +111,29 @@ def parse_ics(icsdata: str, source='', verbose=False) -> dict:
             token = line.split(':')
             key = token[0]
             val = ':'.join(token[1:])
-            if ctx_2 != None:
-                ctx_2[key] = val
-            elif ctx_1 != None:
-                ctx_1[key] = val
+            if key in multivalue:
+                if ctx_2 != None:
+                    if key in ctx_2:
+                        ctx_2[key].append(val)
+                    else:
+                        ctx_2[key] = [ val, ]
+                elif ctx_1 != None:
+                    if key in ctx_1:
+                        ctx_1[key].append(val)
+                    else:
+                        ctx_1[key] = [ val, ]
+                else:
+                    if key in caldata:
+                        caldata[key].append(val)
+                    else:
+                        caldata[key] = [ val, ]
             else:
-                caldata[key] = val
+                if ctx_2 != None:
+                    ctx_2[key] = val
+                elif ctx_1 != None:
+                    ctx_1[key] = val
+                else:
+                    caldata[key] = val
     data['VCALENDAR'] = caldata
     return data
 
