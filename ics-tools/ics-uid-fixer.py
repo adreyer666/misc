@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 """
-Small application to fix CalDAV ics files with "broken" UID
+Small application to fix ics files with "broken" UID or defective text
+continuation.
 """
 
 import os
@@ -53,7 +54,7 @@ def writefile(file, data=None) -> bool:
 def new_uuid() -> str:
     """Create new UUID as string."""
     uuid = str(uuid4())
-    if verbose > 1:
+    if verbose > 2:
         print("New UUID: ", uuid)
     return uuid
 
@@ -61,6 +62,9 @@ def new_uuid() -> str:
 def main(taskdir) -> int:
     pattern = r'^\w+[\w-]+\w$'
     uidregex = re.compile(pattern)
+
+    pattern = r'^\w+[\w\./@-]+\w$'
+    extregex = re.compile(pattern)
 
     try:
         os.stat(taskdir)
@@ -76,8 +80,16 @@ def main(taskdir) -> int:
             print(filename)
         modified = False
         filedata = readfile(filename)
+        lineno = 0
         newdata = list()
         for line in filedata.splitlines():
+            lineno += 1
+            # broken text continuation
+            if line.startswith('\\'):
+                if verbose:
+                    print("Fixing line {} in {}".format(lineno, filename))
+                newdata.append("  "+line)
+                continue
             modify = False
             # Make UID a UUID if non-alphnumeric
             if line.startswith('UID:'):
@@ -93,6 +105,8 @@ def main(taskdir) -> int:
                 modify = False
                 # replace and add extra line
                 if verbose:
+                    print("Fixing line {} in {}".format(lineno, filename))
+                if verbose > 1:
                     print(line)
                 newdata.append("X-"+mytag+"-"+line)
                 newdata.append('UID:'+new_uuid())
@@ -105,13 +119,13 @@ def main(taskdir) -> int:
                 # is no longer treated as an identifier
                 if line.rfind(':') > 15:
                     modify = True
-                elif line.rfind('/') > -1:
-                    modify = True
                 else:
                     (tag,uid) = line.split(':')
-                    m = uidregex.match(uid)
+                    m = extregex.match(uid)
                     if m == None:
                         modify = True
+                    elif line.rfind('/') > -1:
+                        line = 'X-TZID:'+uid 
             elif line.startswith('TZID:'):
                 # vdirsync chokes if 'TZID' appears out of 'VTIMEZONE' context
                 # luckily this seems only to happen with my local timezone
@@ -124,6 +138,8 @@ def main(taskdir) -> int:
                 modify = False
                 # rename tag
                 if verbose:
+                    print("Fixing line {} in {}".format(lineno, filename))
+                if verbose > 1:
                     print(line)
                 newdata.append("X-"+mytag+"-"+line)
                 modified = True
@@ -135,6 +151,8 @@ def main(taskdir) -> int:
                 if verbose > -1:
                     print("{} modified".format(filename))
                 os.rename(filename+'.new', filename)
+            else:
+                return 2
     return 0
 
 
