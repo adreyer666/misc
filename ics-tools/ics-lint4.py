@@ -109,7 +109,6 @@ def parse_ics(icsdata: str, source='', verbose=False) -> dict:
             if ctx == 'VCALENDAR':
                 data[ctx] = caldata
             elif (ctx == 'VEVENT') or (ctx == 'VTODO') or (ctx == 'VTIMEZONE') or (ctx == 'ALARM'):
-               
                 if ctx_1 == None:
                     print("context missing; source {} line {}".format(source,lineno))
                     print(line)
@@ -166,9 +165,9 @@ def parse_ics(icsdata: str, source='', verbose=False) -> dict:
                 print(line)
                 print("Context: "+' -> '.join(ctxstack))
                 continue
-            token = line.split(':')
-            key = token[0]
-            val = ':'.join(token[1:])
+            tokens = line.split(':')
+            key = tokens[0]
+            val = ':'.join(tokens[1:])
             if key in multivalue:
                 if ctx_2 != None:
                     if key in ctx_2:
@@ -245,7 +244,7 @@ def write_ics(icsdata: dict, verbose=False) -> str:
 global_uidset = dict()
 
 def ics_fixup(data: dict) -> dict:
-    """Fix up broken/non-compliant or non-interchangeable ics data provided in structured dataset"""
+    """Fix up broken/non-compliant or non-interchangeable ics data provided in structured dataset."""
     if data == None:
         return None
     if ('VCALENDAR' not in data) or (data['VCALENDAR'] == None):
@@ -362,17 +361,21 @@ def main(taskdir) -> int:
         return 1
 
     for filename in getfiles(taskdir):
+        if not filename.endswith('.ics'):
+            if verbose:
+                print("skipping {}: not an ics file".format(filename))
+            continue
         if verbose:
-            print(filename)
+            print("reading {}".format(filename))
         filedata = readfile(filename)
         data = parse_ics(filedata, filename, verbose)
         if data == None:
-            print("{} is not an ics file, skipping".format(filename))
+            print("skipping {}: not an ics file".format(filename))
             continue
         
         fixdata = ics_fixup(data)
         if fixdata == None:
-            print("fatal flaw in {}, skipping".format(filename))
+            print("skipping {}: fatal flaw".format(filename))
             continue
 
         newdata = write_ics(data, verbose)
@@ -381,7 +384,7 @@ def main(taskdir) -> int:
             if verbose > -1:
                 print("{} -> {} modified".format(filename,newfile))
         else:
-            print("Error writing {}".format(newfile))
+            print("error writing {}".format(newfile))
     return 0
 
 
@@ -400,6 +403,4 @@ if __name__ == '__main__':
         taskdir = sys.argv[1]
     if verbose:
         print("You are running `{}`".format(" ".join(sys.argv)))
-    rc = main(taskdir)
-    sys.exit(rc)
-
+    sys.exit(main(taskdir))
