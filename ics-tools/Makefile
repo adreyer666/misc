@@ -1,7 +1,7 @@
 #!env make
 
-        APP = ics-lint3
-    VERSION = 0.0.1
+        APP = ics-lint4
+    VERSION = 0.1.0
 
 # / ------ python stuff --------/ #
         REQ = requirements.txt
@@ -20,7 +20,7 @@ venv: $(REQ)
 	rm $(REQ).tmp
 
 run: $(RUNENV)
-	-( . $(RUNENV)/bin/activate && python $(APP) )
+	-( . $(RUNENV)/bin/activate && python $(APP).py )
 
 clean:
 	-rm -r $(RUNENV)
