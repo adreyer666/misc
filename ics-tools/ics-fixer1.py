@@ -10,6 +10,7 @@ import sys
 import re
 import getopt
 from uuid import uuid4
+import filecmp
 
 # --------------- magic here --------------- #
 
@@ -291,12 +292,16 @@ class MyICS():
                         continue
                     p = vgroup_item_1[vprop]
                     if p.endswith('.ics'):
-                        print("fixing property id with '.ics': {}".format(p))
+                        if self._verbose:
+                            print("fixing property id with '.ics': {}".format(p))
                         data['VCALENDAR'][vgroup_1][vgroup_iter_1][vprop] = str(uuid4())
                     if (p in uidset) or (p in self.global_uidset):
                         if self._verbose:
                             print("fixing non-unique property id {}".format(p))
                         data['VCALENDAR'][vgroup_1][vgroup_iter_1][vprop] = str(uuid4())
+                        if self._verbose > 1:
+                            print("{} -1-- {}".format(p,data['VCALENDAR'][vgroup_1][vgroup_iter_1][vprop]))
+                    uidset[data['VCALENDAR'][vgroup_1][vgroup_iter_1][vprop]] = 1
                 for vgroup_2 in vgroups_2:
                     if vgroup_2 not in vgroup_item_1:
                         continue
@@ -307,12 +312,15 @@ class MyICS():
                                 continue
                             p = vgroup_item_1[vgroup_2][vgroup_iter_2][vprop]
                             if p.endswith('.ics'):
-                                print("fixing property id with '.ics': {}".format(p))
+                                if self._verbose:
+                                    print("fixing property id with '.ics': {}".format(p))
                                 data['VCALENDAR'][vgroup_1][vgroup_iter_1][vgroup_2][vgroup_iter_2][vprop] = str(uuid4())
                             if (p in uidset) or (p in self.global_uidset):
                                 if self._verbose:
                                     print("fixing non-unique property id {}".format(p))
                                 data['VCALENDAR'][vgroup_1][vgroup_iter_1][vgroup_2][vgroup_iter_2][vprop] = str(uuid4())
+                                if self._verbose > 1:
+                                    print("{} -2- {}".format(p,data['VCALENDAR'][vgroup_1][vgroup_iter_1][vgroup_2][vgroup_iter_2][vprop]))
                             uidset[data['VCALENDAR'][vgroup_1][vgroup_iter_1][vgroup_2][vgroup_iter_2][vprop]] = 1
                 # check propregex
                 for vprop in vproperties:
@@ -348,9 +356,11 @@ class MyICS():
                 if k.startswith('DTSTAMP;VALUE=DATE'):
                     value = vevent[k]
                     badkeys.append(k)
-                if (k == 'X-RADICALE-NAME') and ('UID' in vevent):
-                    # and (vevent['UID'] == vevent['X-RADICALE-NAME']):
-                    badkeys.append(k)
+                if (k == 'X-RADICALE-NAME') and ('UID' in vevent) and (vevent['UID'] == vevent['X-RADICALE-NAME']):
+                    ## TODO: check if this is correct...
+                    ## they shouldn't be the same as the previous fix should have modified one of them!
+                    #badkeys.append(k)
+                    data['VCALENDAR']['VEVENT'][event_iter][k] = str(uuid4())
             for k in badkeys:
                 del data['VCALENDAR']['VEVENT'][event_iter][k]
             if value != None:
@@ -415,6 +425,21 @@ def getfiles(topdir) -> list:
             filelist.append(os.path.join(root, name))
     return filelist
 
+def cmpfiles(a=None, b=None, verbose: bool =False) -> bool:
+    if (a == None) or (b == None):
+        return False
+    res = True
+    lineno = 0
+    with open(a) as f1, open(b) as f2:
+        for line1, line2 in zip(f1, f2):
+            lineno += 1
+            if line1 != line2:
+                if verbose:
+                    print(f"files differ on line {lineno}:\n{line1}{line2}")
+                return False
+    return res
+
+
 def main() -> int:
     """Main loop to run thru all files in the given directory."""
      # taskdir = os.path.abspath(os.getcwd())
@@ -442,7 +467,8 @@ def main() -> int:
             return 7
     if verbose:
         print("You are running `{}`".format(" ".join(sys.argv)))
-    taskdir = args[0]
+    if len(args) > 0:
+        taskdir = args[0]
     if len(args) > 1:
         print("extra arguments detected: {}".format(args[1:]))    
  
@@ -462,7 +488,7 @@ def main() -> int:
             continue
         if verbose:
             print("reading {}".format(filename))
-        cal = MyICS(file=filename, verbose=verbose,  debug=debug)
+        cal = MyICS(file=filename, verbose=verbose, debug=debug)
         if cal == None:
             print("skipping {}: not an ics file".format(filename))
             continue
@@ -473,8 +499,16 @@ def main() -> int:
 
         newfile = filename+'.new'
         if cal.writefile(newfile):
-            if verbose > -1:
-                print("{} -> {} modified".format(filename,newfile))
+            if verbose > 1:
+                print("{} written".format(filename, newfile))
+            # compare old and new..
+            unchanged = cmpfiles(filename, newfile, (verbose>0))
+            if unchanged:
+                os.remove(newfile)
+            else:
+                if verbose > -1:
+                    print("{} -> {} modified".format(filename, newfile))
+                pass
         else:
             print("error writing {}".format(newfile))
     return 0
@@ -482,3 +516,4 @@ def main() -> int:
 
 if __name__ == '__main__':
     sys.exit(main())
+
