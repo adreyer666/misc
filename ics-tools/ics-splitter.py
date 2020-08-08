@@ -27,13 +27,16 @@ class MyICS():
             self.data = self.parse(data,  file)
         else:
             self.readfile(file)
+        if self._verbose and (data == None):
+            print("no data")
  
     def _readfile(self, file) -> str:
         """Read from file return contents or empty string."""
         if file:
             try:
                 if os.stat(file):
-                    with open(file, 'r', encoding='utf8') as file_handle:
+                    # with open(file, 'r', encoding='utf8') as file_handle:
+                    with open(file, 'rb') as file_handle:
                         file_content = file_handle.read()
                     return file_content
             except FileNotFoundError as err:
@@ -74,9 +77,6 @@ class MyICS():
             data = self.write()
             if data == None:
                 return False
-            #print("xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-            #print(data)
-            #print("x--------------------------x")
             return self._writefile(file, data)
         return False
 
@@ -100,6 +100,11 @@ class MyICS():
         caldata = None
         for line in icsdata.splitlines():
             lineno += 1
+            line = str(line, 'utf-8', 'ignore')
+            if (lineno == 1) and (line.endswith('BEGIN:VCALENDAR')):
+                if not line.startswith('BEGIN:VCALENDAR'):
+                    # trim binary blob..
+                    line = str("BEGIN:VCALENDAR")
             if (lineno == 1) and (not line.startswith('BEGIN:VCALENDAR')):
                 if self._verbose:
                     print("Not ics data")
@@ -376,6 +381,9 @@ def main() -> int:
         return 1
 
     for filename in getfiles(taskdir):
+        if filename.startswith('\.'):
+            # skip dotfiles
+            continue
         if verbose:
             print("reading {}".format(filename))
         cal = MyICS(file=filename, verbose=verbose, debug=debug)

@@ -27,13 +27,16 @@ class MyICS():
             self.data = self.parse(data,  file)
         else:
             self.readfile(file)
+        if self._verbose and (data == None):
+            print("no data")
  
     def _readfile(self, file) -> str:
         """Read from file return contents or empty string."""
         if file:
             try:
                 if os.stat(file):
-                    with open(file, 'r', encoding='utf8') as file_handle:
+                    # with open(file, 'r', encoding='utf8') as file_handle:
+                    with open(file, 'rb') as file_handle:
                         file_content = file_handle.read()
                     return file_content
             except FileNotFoundError as err:
@@ -65,11 +68,16 @@ class MyICS():
     def readfile(self, file) -> bool:
         if file != '':
             self.data = self.parse(self._readfile(file), file)
-        return self.data != ''
+        return self.data != None
 
     def writefile(self, file) -> bool:
+        if self.data == None:
+            return False
         if file != '':
-            return self._writefile(file, self.write())
+            data = self.write()
+            if data == None:
+                return False
+            return self._writefile(file, data)
         return False
 
     def fixup(self):
@@ -92,6 +100,11 @@ class MyICS():
         caldata = None
         for line in icsdata.splitlines():
             lineno += 1
+            line = str(line, 'utf-8', 'ignore')
+            if (lineno == 1) and (line.endswith('BEGIN:VCALENDAR')):
+                if not line.startswith('BEGIN:VCALENDAR'):
+                    # trim binary blob..
+                    line = str("BEGIN:VCALENDAR")
             if (lineno == 1) and (not line.startswith('BEGIN:VCALENDAR')):
                 if self._verbose:
                     print("Not ics data")
@@ -266,6 +279,8 @@ class MyICS():
 
         if data == None:
             data = self.data
+        if data == None:
+            return None
         if ('VCALENDAR' not in data) or (data['VCALENDAR'] == None):
             return None
         if ('VEVENT' not in data['VCALENDAR']) or (data['VCALENDAR']['VEVENT'] == None):
@@ -482,14 +497,13 @@ def main() -> int:
         return 1
 
     for filename in getfiles(taskdir):
-        if not filename.endswith('.ics'):
-            if verbose:
-                print("skipping {}: not an ics file".format(filename))
+        if filename.startswith('\.'):
+            # skip dotfiles
             continue
         if verbose:
             print("reading {}".format(filename))
         cal = MyICS(file=filename, verbose=verbose, debug=debug)
-        if cal == None:
+        if None == cal.get():
             print("skipping {}: not an ics file".format(filename))
             continue
         
