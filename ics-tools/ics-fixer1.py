@@ -348,14 +348,21 @@ class MyICS():
                         data['VCALENDAR'][vgroup_1][vgroup_iter_1][vprop] = str(uuid4())
                     uidset[data['VCALENDAR'][vgroup_1][vgroup_iter_1][vprop]] = 1
         self.global_uidset.update(uidset)
-        # check if TZID are official names
+        # DT properties have TZ included no need to specify TZID (errors on radicale)
         for event_iter in range(len(data['VCALENDAR']['VEVENT'])):
             vevent = data['VCALENDAR']['VEVENT'][event_iter]
-            if 'TZID' not in vevent:
-                continue
-            tz = data['VCALENDAR']['VEVENT'][event_iter]['TZID']
-            if tz not in pytz.all_timezones:
-                print("broken timezone id {}".format(tz))
+            if 'TZID' in vevent:
+                del data['VCALENDAR']['VEVENT'][event_iter]['TZID']
+        ## -- following part disabled (see above) -- ##
+        ## # check if TZID are official names
+        ## for event_iter in range(len(data['VCALENDAR']['VEVENT'])):
+        ##     vevent = data['VCALENDAR']['VEVENT'][event_iter]
+        ##     if 'TZID' not in vevent:
+        ##         continue
+        ##     tz = data['VCALENDAR']['VEVENT'][event_iter]['TZID']
+        ##     if tz not in pytz.all_timezones:
+        ##         print("broken timezone id {}".format(tz))
+        ## --------- end of disabled part --------- ##
         # Thunderbird Lightning chokes on composite 'TRIGGER'
         # entries with VALUE=DURATION (VCALENDAR > VEVENT > VALARM)
         # and composite 'DTSTAMP' properties with VALUE=DATE
