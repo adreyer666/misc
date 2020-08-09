@@ -27,7 +27,7 @@ class MyICS():
             self.data = self.parse(data,  file)
         else:
             self.readfile(file)
-        if self._verbose and (data == None):
+        if self._verbose and (self.data == None):
             print("no data")
  
     def _readfile(self, file) -> str:
@@ -386,6 +386,7 @@ def main() -> int:
         taskfiles = getfiles(taskdir)
 
     for filename in taskfiles:
+        splits = dict()
         if filename.startswith('\.'):
             # skip dotfiles
             continue
@@ -395,7 +396,7 @@ def main() -> int:
         if None == cal.get():
             print("skipping {}: not an ics file".format(filename))
             continue
-        
+
         splits = cal.split()
         if splits == None:
             if verbose:
@@ -406,12 +407,14 @@ def main() -> int:
 
         for k in splits.keys():
             cal.set(splits[k])
-            if cal.writefile(k):
-                if k == filename:
+            dirname = os.path.dirname(filename)
+            newfile = os.path.join(dirname, k)
+            if cal.writefile(newfile):
+                if newfile == filename:
                     print("overwriting {}".format(filename))
-                print("{} written".format(k))
+                print("{} written".format(newfile))
             else:
-                print("error writing {}".format(k))
+                print("error writing {}".format(newfile))
     return 0
 
 

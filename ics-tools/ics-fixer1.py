@@ -348,6 +348,15 @@ class MyICS():
                         data['VCALENDAR'][vgroup_1][vgroup_iter_1][vprop] = str(uuid4())
                     uidset[data['VCALENDAR'][vgroup_1][vgroup_iter_1][vprop]] = 1
         self.global_uidset.update(uidset)
+        # RECURRENCE-ID property errors on new radicale versions (use RRULE instead)
+        for event_iter in range(len(data['VCALENDAR']['VEVENT'])):
+            badkeys = list()
+            vevent = data['VCALENDAR']['VEVENT'][event_iter]
+            for k in vevent:
+                if k.startswith('RECURRENCE-ID'):
+                    badkeys.append(k)
+            for k in badkeys:
+                del data['VCALENDAR']['VEVENT'][event_iter][k]
         # DT properties have TZ included no need to specify TZID (errors on radicale)
         for event_iter in range(len(data['VCALENDAR']['VEVENT'])):
             vevent = data['VCALENDAR']['VEVENT'][event_iter]
@@ -374,6 +383,8 @@ class MyICS():
             value = None
             for k in vevent.keys():
                 if k.startswith('X-LIC-ERROR'):
+                    badkeys.append(k)
+                if k.startswith('COLOR'):
                     badkeys.append(k)
                 if k.startswith('DTSTAMP;VALUE=DATE'):
                     value = vevent[k]
