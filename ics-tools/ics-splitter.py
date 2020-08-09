@@ -346,9 +346,10 @@ def main() -> int:
     taskdir = '.'
     verbose = 0
     debug = list()
+    taskfiles = list()
     
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hvd:", ["help", "debug="])
+        opts, args = getopt.getopt(sys.argv[1:], "hvd:f:", ["help", "debug=", "file="])
     except getopt.GetoptError as err:
         print(err)
         usage()
@@ -361,6 +362,8 @@ def main() -> int:
             sys.exit()
         elif o in ("-d", "--debug"):
             debug.append(a)
+        elif o in ("-f", "--file"):
+            taskfiles.append(a)
         else:
             assert False, "unhandled option"
             return 7
@@ -370,17 +373,19 @@ def main() -> int:
         taskdir = args[0]
     if len(args) > 1:
         print("extra arguments detected: {}".format(args[1:]))    
- 
-    try:
-        os.stat(taskdir)
-    except FileNotFoundError as err:
-        if verbose:
-            print('Directory not found, exiting.')
-        if verbose > 1:
-            print(err)
-        return 1
 
-    for filename in getfiles(taskdir):
+    if len(taskfiles) == 0:
+        try:
+            os.stat(taskdir)
+        except FileNotFoundError as err:
+            if verbose:
+                print('Directory not found, exiting.')
+            if verbose > 1:
+                print(err)
+            return 1
+        taskfiles = getfiles(taskdir)
+
+    for filename in taskfiles:
         if filename.startswith('\.'):
             # skip dotfiles
             continue
