@@ -28,6 +28,19 @@ run:
 	    #--memory 256M \
 	    #--pids-limit 50 \
 
+test:
+	podman run --rm -d --name radicale \
+	    -p 127.0.0.1:5232:5232 \
+	    --init \
+	    --cap-drop ALL \
+	    --cap-add CHOWN \
+	    --cap-add SETUID \
+	    --cap-add SETGID \
+	    --cap-add KILL \
+	    -v `pwd`/data:/data \
+	    -v `pwd`/config:/config:ro \
+	    $(IMAGE)
+
 stop:
 	set -x; \
 	  CTR=`podman ps -a --format "{{.ID}}  {{.Image}}" | grep $(IMAGE) | cut -d\  -f1`; \

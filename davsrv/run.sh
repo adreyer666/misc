@@ -7,7 +7,7 @@ set -e
 if [ "$1" = 'radicale' ] && [ "$(id -u)" = '0' ]; then
     #chown -R radicale:radicale /data
     exec 2> /var/log/radicale/radicale.log
-	    exec "$@"
+    exec "$@"
 else
   exec "$@"
 fi

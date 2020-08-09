@@ -8,15 +8,12 @@
 #
 # The current values are the default ones
 
-
 [server]
-
 # CalDAV server hostnames separated by a comma
 # IPv4 syntax: address:port
 # IPv6 syntax: [address]:port
-# For example: 0.0.0.0:9999, [::]:9999
-#hosts = 127.0.0.1:5232
-hosts = 0.0.0.0:5232
+hosts = 127.0.0.1:5232
+#hosts = 0.0.0.0:5232
 
 # Max parallel connections
 #max_connections = 8
@@ -27,45 +24,24 @@ hosts = 0.0.0.0:5232
 # Socket timeout (seconds)
 #timeout = 30
 
-# SSL flag, enable HTTPS protocol
 ssl = True
-
-# SSL certificate path
 certificate = /etc/radicale/ssl/radicale.crt
-
-# SSL private key
 key = /etc/radicale/ssl/radicale.key
-
-# CA certificate for validating clients. This can be used to secure
-# TCP traffic between Radicale and a reverse proxy
 #certificate_authority =
-
-# SSL Protocol used. See python's ssl module for available values
-#protocol = PROTOCOL_TLSv1_2
-
-# Available ciphers. See python's ssl module for available ciphers
-#ciphers =
 
 # Reverse DNS to resolve client address in logs
 #dns_lookup = True
 
 
 [encoding]
-
-# Encoding for responding requests
-#request = utf-8
-
-# Encoding for storing local collections
-#stock = utf-8
+request = utf-8
+stock = utf-8
 
 
 [auth]
-
-# Authentication method
 # Value: none | htpasswd | remote_user | http_x_remote_user
 type = htpasswd
-
-# Htpasswd filename
+realm = DavSrv - Password Required
 htpasswd_filename = /etc/radicale/users
 
 # Htpasswd encryption method
@@ -74,31 +50,16 @@ htpasswd_filename = /etc/radicale/users
 # bcrypt and md5 require the passlib library to be installed.
 htpasswd_encryption = bcrypt
 
-# Incorrect authentication delay (seconds)
-#delay = 1
-
-# Message displayed in the client when a password is needed
-realm = DavSrv - Password Required
-
 
 [rights]
-
-# Rights backend
-# Value: none | authenticated | owner_only | owner_write | from_file
 #type = owner_only
-
-# File for rights management from_file
-#file = /etc/radicale/rights
+type = from_file
+file = /etc/radicale/rights
 
 
 [storage]
-
-# Storage backend
-# Value: multifilesystem
-#type = multifilesystem
-
-# Folder for storing local collections, created if not present
-filesystem_folder = /var/lib/radicale/collections
+type = multifilesystem
+filesystem_folder = /var/lib/radicale/
 
 # Delete sync token that are older (seconds)
 #max_sync_token_age = 2592000
@@ -113,7 +74,7 @@ filesystem_folder = /var/lib/radicale/collections
 # Web interface backend
 # Value: none | internal | radicale_infcloud
 # (See also https://github.com/Unrud/RadicaleInfCloud)
-type = internal
+type = radicale_infcloud
 
 
 [logging]
