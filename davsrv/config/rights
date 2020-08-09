@@ -1,0 +1,31 @@
+## # read access to root collection for all users
+[all-read-root-collection]
+user = .+
+collection =
+permissions = R
+
+# write access to own files for each user
+[owner-write]
+user: .+
+collection: ^{user}(/.+)?$
+permissions: RrWw
+
+# Allow reading root collection for authenticated users
+[root]
+user: .+
+collection:
+permissions: R
+
+# Allow reading and writing principal collection (same as user name)
+[principal]
+user: .+
+collection: {user}
+permissions: RW
+
+# Allow reading and writing calendars and address books that are direct
+# children of the principal collection
+[calendars]
+user: .+
+collection: {user}/[^/]+
+permissions: rw
+
